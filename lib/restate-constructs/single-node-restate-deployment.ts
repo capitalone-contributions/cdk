@@ -146,8 +146,8 @@ const RESTATE_TLS_INGRESS_PORT = 443;
 const RESTATE_ADMIN_PORT = 9070;
 const RESTATE_TLS_ADMIN_PORT = 9073;
 const RESTATE_IMAGE_DEFAULT = "docker.restate.dev/restatedev/restate";
-const RESTATE_DOCKER_DEFAULT_TAG = "1.6";
-const RESTATE_NPM_DEFAULT_TAG = "1.6";
+const RESTATE_DOCKER_DEFAULT_TAG = "1.7";
+const RESTATE_NPM_DEFAULT_TAG = "1.7";
 const ADOT_DOCKER_DEFAULT_TAG = "latest";
 const DATA_DEVICE_NAME = "/dev/sdd";
 
@@ -168,6 +168,9 @@ const DATA_DEVICE_NAME = "/dev/sdd";
  *
  * See {@link SingleNodeRestateProps} for available configuration options, and {@link ServiceDeployer} for deploying
  * Lambda handlers to environments.
+ *
+ * @deprecated This construct will be removed in a future release. To run Restate on Kubernetes, use the Restate Helm
+ * chart or the restate-operator instead.
  */
 export class SingleNodeRestateDeployment extends Construct implements IRestateEnvironment {
   readonly instance: ec2.Instance;

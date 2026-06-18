@@ -28,7 +28,7 @@ const PUBLIC_ADMIN_PORT = 9070;
 const RESTATE_INGRESS_PORT = 8080;
 const RESTATE_ADMIN_PORT = 9070;
 const RESTATE_IMAGE_DEFAULT = "docker.restate.dev/restatedev/restate";
-const RESTATE_DOCKER_DEFAULT_TAG = "1.6";
+const RESTATE_DOCKER_DEFAULT_TAG = "1.7";
 const ADOT_DOCKER_DEFAULT_TAG = "latest";
 
 export interface RestateFargateProps {
@@ -101,6 +101,9 @@ export interface RestateFargateProps {
  * Creates a Restate service deployment running as a Fargate task and backed by EFS.
  *
  * Please note that this construct is still experimental! Use with caution.
+ *
+ * @deprecated This construct will be removed in a future release. To run Restate on Kubernetes, use the Restate Helm
+ * chart or the restate-operator instead.
  */
 export class FargateRestateDeployment extends Construct implements IRestateEnvironment {
   readonly invokerRole: iam.IRole;
