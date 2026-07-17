@@ -43,9 +43,8 @@ export interface ServiceRegistrationProps {
    * registration, service visibility patch, and any pruning/deletion queries). Useful for tagging requests or
    * satisfying a proxy/gateway in front of the Restate admin endpoint.
    *
-   * These are applied by the shipped handler and do not require bundling. Reserved headers set by the handler
-   * itself (`Authorization`, `Content-Type`, `Accept`, matched case-insensitively) take precedence over entries
-   * provided here.
+   * These are applied by the shipped handler and do not require bundling. They take precedence over headers the
+   * handler sets itself (`Authorization`, `Content-Type`, `Accept`); use standard header casing to override one.
    */
   additionalHeaders?: Record<string, string>;
 

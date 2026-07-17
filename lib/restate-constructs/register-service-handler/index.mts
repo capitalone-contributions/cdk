@@ -47,7 +47,11 @@ export interface RegistrationProperties {
    */
   authTokenJsonField?: string;
 
-  /** Static headers to add to every admin API request. Reserved headers set by the handler take precedence. */
+  /**
+   * Static headers to add to every admin API request. These take precedence over headers the handler sets itself
+   * (`Authorization`, `Content-Type`, `Accept`), so a caller can override them when a proxy or gateway in front of the
+   * admin endpoint requires it. Use standard header casing to override a handler-set header.
+   */
   additionalHeaders?: Record<string, string>;
 
   /** Not used by the handler, purely used to trick CloudFormation to perform an update when it otherwise would not. */
@@ -417,20 +421,10 @@ export const handler = async function (event: CloudFormationCustomResourceEvent,
 };
 
 async function buildBaseHeaders(props: RegistrationProperties): Promise<Record<string, string>> {
-  // Static extra headers form the base; reserved headers set by the handler must always win, so we strip any
-  // caller-provided entries that collide with them (case-insensitive) before layering the auth header on top.
-  const reserved = new Set(["authorization", "content-type", "accept"]);
-  const baseHeaders: Record<string, string> = {};
-  for (const [key, value] of Object.entries(props.additionalHeaders ?? {})) {
-    if (reserved.has(key.toLowerCase())) {
-      console.warn(`Ignoring reserved header "${key}" from additionalHeaders.`);
-      continue;
-    }
-    baseHeaders[key] = value;
-  }
+  const additionalHeaders = props.additionalHeaders ?? {};
 
   if (!props.authTokenSecretArn) {
-    return baseHeaders;
+    return { ...additionalHeaders };
   }
 
   console.log(`Using bearer authentication token from secret ${props.authTokenSecretArn}`);
@@ -461,9 +455,10 @@ async function buildBaseHeaders(props: RegistrationProperties): Promise<Record<s
     token = field;
   }
 
+  // Spread additionalHeaders last so a caller can override the Authorization header if they need to.
   return {
-    ...baseHeaders,
     Authorization: `Bearer ${token}`,
+    ...additionalHeaders,
   };
 }
 
