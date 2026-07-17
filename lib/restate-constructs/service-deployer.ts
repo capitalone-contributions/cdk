@@ -31,6 +31,25 @@ export interface ServiceRegistrationProps {
   authToken?: secrets.ISecret;
 
   /**
+   * When the {@link authToken} secret stores a JSON object rather than a raw string, extract the bearer token from
+   * this top-level field instead of using the whole secret value. For example, given a secret value of
+   * `{"token":"rst_xxx","version":3}`, set this to `"token"`. Only flat, top-level keys are supported; nested paths
+   * are not.
+   */
+  authTokenJsonField?: string;
+
+  /**
+   * Static headers to add to every admin API request made during registration (health check, deployment
+   * registration, service visibility patch, and any pruning/deletion queries). Useful for tagging requests or
+   * satisfying a proxy/gateway in front of the Restate admin endpoint.
+   *
+   * These are applied by the shipped handler and do not require bundling. Reserved headers set by the handler
+   * itself (`Authorization`, `Content-Type`, `Accept`, matched case-insensitively) take precedence over entries
+   * provided here.
+   */
+  additionalHeaders?: Record<string, string>;
+
+  /**
    * The external invoker role that Restate can assume to execute service handlers. If left unset, it's assumed that
    * the Restate deployment has sufficient permissions to invoke the handler directly. Takes precedence over the
    * environment's invokerRole.
@@ -311,6 +330,9 @@ export class ServiceDeployer extends Construct {
         servicePath: serviceName,
         adminUrl: options?.adminUrl ?? environment.adminUrl,
         authTokenSecretArn: authToken?.secretArn,
+        // Forward JSON-field extraction and extra headers only when set, to avoid CFN property diffs for existing users.
+        ...(options?.authTokenJsonField !== undefined ? { authTokenJsonField: options.authTokenJsonField } : {}),
+        ...(options?.additionalHeaders !== undefined ? { additionalHeaders: options.additionalHeaders } : {}),
         serviceLambdaArn: handler.functionArn,
         invokeRoleArn: invokerRole?.roleArn,
         removalPolicy: options?.removalPolicy === cdk.RemovalPolicy.DESTROY ? "destroy" : ("retain" as const),
