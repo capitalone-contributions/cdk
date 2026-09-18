@@ -214,7 +214,10 @@ export const handler = async function (event: CloudFormationCustomResourceEvent,
       authHeader = await buildBaseHeaders(props);
     } catch (e) {
       console.warn(`Failed to load auth token for deletion: ${(e as Error)?.message}`);
-      console.warn("Proceeding with deletion without auth header.");
+      // Static headers don't depend on the secret, so keep them: a proxy in front of the admin
+      // endpoint may reject the request without them, leaving the deployment registered.
+      authHeader = props.additionalHeaders ?? {};
+      console.warn("Proceeding with deletion without the Authorization header.");
     }
 
     console.log(`Removal policy is 'destroy'; finding deployment for ${props.serviceLambdaArn}`);
