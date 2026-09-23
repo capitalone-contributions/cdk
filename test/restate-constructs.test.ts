@@ -316,6 +316,7 @@ describe("Restate constructs", () => {
     const restateEnvironment = RestateEnvironment.fromAttributes({
       adminUrl: "https://restate.example.com:9070",
       authToken,
+      authTokenJsonField: "token",
     });
 
     const handler = mockHandler(stack);
@@ -323,7 +324,6 @@ describe("Restate constructs", () => {
       code: lambda.Code.fromAsset("dist/register-service-handler"),
     });
     serviceDeployer.register(handler.currentVersion, restateEnvironment, {
-      authTokenJsonField: "token",
       additionalHeaders: { "X-Deploy-Source": "cdk", "X-Env": "staging" },
     });
 
@@ -353,6 +353,25 @@ describe("Restate constructs", () => {
     const customResource = Object.values(properties)[0]!.Properties as Record<string, unknown>;
     expect("authTokenJsonField" in customResource).toBe(false);
     expect("additionalHeaders" in customResource).toBe(false);
+  });
+
+  test("Service Deployer rejects authTokenJsonField without an auth token", () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, "ServiceDeployerInvalidAuthOptions", {
+      env: { account: "account-id", region: "region" },
+    });
+    const restateEnvironment = RestateEnvironment.fromAttributes({
+      adminUrl: "https://restate.example.com:9070",
+      authTokenJsonField: "token",
+    });
+    const handler = mockHandler(stack);
+    const serviceDeployer = new ServiceDeployer(stack, "ServiceDeployer", {
+      code: lambda.Code.fromAsset("dist/register-service-handler"),
+    });
+
+    expect(() => serviceDeployer.register(handler.currentVersion, restateEnvironment)).toThrow(
+      "authTokenJsonField requires an authToken",
+    );
   });
 
   test("[Experimental] Create a self-hosted Restate environment deployed on ECS Fargate", () => {

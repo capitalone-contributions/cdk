@@ -450,9 +450,9 @@ async function buildBaseHeaders(props: RegistrationProperties): Promise<Record<s
       throw new Error(`Secret value is not valid JSON; cannot extract field "${props.authTokenJsonField}".`);
     }
     const field = parsed?.[props.authTokenJsonField];
-    if (typeof field !== "string") {
+    if (typeof field !== "string" || field.length === 0) {
       throw new Error(
-        `Secret JSON field "${props.authTokenJsonField}" is missing or not a string; cannot use it as a bearer token.`,
+        `Secret JSON field "${props.authTokenJsonField}" is missing, empty, or not a string; cannot use it as a bearer token.`,
       );
     }
     token = field;

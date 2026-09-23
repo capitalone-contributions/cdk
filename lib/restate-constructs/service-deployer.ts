@@ -26,25 +26,18 @@ const DEFAULT_TIMEOUT = cdk.Duration.seconds(300);
 export interface ServiceRegistrationProps {
   /**
    * Secrets Manager secret ARN for the authentication token to use when calling the admin API. Takes precedence
-   * over the environment's token.
+   * over the environment's token and JSON field configuration.
    */
   authToken?: secrets.ISecret;
-
-  /**
-   * When the {@link authToken} secret stores a JSON object rather than a raw string, extract the bearer token from
-   * this top-level field instead of using the whole secret value. For example, given a secret value of
-   * `{"token":"rst_xxx","version":3}`, set this to `"token"`. Only flat, top-level keys are supported; nested paths
-   * are not.
-   */
-  authTokenJsonField?: string;
 
   /**
    * Static headers to add to every admin API request made during registration (health check, deployment
    * registration, service visibility patch, and any pruning/deletion queries). Useful for tagging requests or
    * satisfying a proxy/gateway in front of the Restate admin endpoint.
    *
-   * These are applied by the shipped handler and do not require bundling. They take precedence over headers the
-   * handler sets itself (`Authorization`, `Content-Type`, `Accept`); use standard header casing to override one.
+   * These values are stored in plaintext in the synthesized CloudFormation template; do not use them for credentials.
+   * They take precedence over headers set by the handler, regardless of casing. Do not override `Content-Type` or
+   * `Accept`, because registration and cleanup rely on JSON request and response bodies.
    */
   additionalHeaders?: Record<string, string>;
 
@@ -317,7 +310,13 @@ export class ServiceDeployer extends Construct {
     environment: IRestateEnvironment,
     options?: ServiceRegistrationProps,
   ) {
+    if (environment.authTokenJsonField !== undefined && !environment.authToken) {
+      throw new Error("authTokenJsonField requires an authToken on the target environment.");
+    }
+
     const authToken = options?.authToken ?? environment.authToken;
+    // The JSON field describes the environment's secret, so do not apply it to a registration-level token override.
+    const authTokenJsonField = options?.authToken === undefined ? environment.authTokenJsonField : undefined;
     authToken?.grantRead(this.eventHandler);
 
     const invokerRole = options?.invokerRole ?? environment.invokerRole;
@@ -330,7 +329,7 @@ export class ServiceDeployer extends Construct {
         adminUrl: options?.adminUrl ?? environment.adminUrl,
         authTokenSecretArn: authToken?.secretArn,
         // Forward JSON-field extraction and extra headers only when set, to avoid CFN property diffs for existing users.
-        ...(options?.authTokenJsonField !== undefined ? { authTokenJsonField: options.authTokenJsonField } : {}),
+        ...(authTokenJsonField !== undefined ? { authTokenJsonField } : {}),
         ...(options?.additionalHeaders !== undefined ? { additionalHeaders: options.additionalHeaders } : {}),
         serviceLambdaArn: handler.functionArn,
         invokeRoleArn: invokerRole?.roleArn,
